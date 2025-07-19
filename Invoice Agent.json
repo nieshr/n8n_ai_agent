@@ -1,0 +1,316 @@
+{
+  "name": "Invoice Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "e54a9762-76e2-4ebc-a9f7-56125b579f78",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -832,
+        16
+      ],
+      "id": "e3773b8d-5622-47b5-af2a-86a43a1dc8a2",
+      "name": "Webhook",
+      "webhookId": "e54a9762-76e2-4ebc-a9f7-56125b579f78"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.file }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -464,
+        -144
+      ],
+      "id": "bd14b796-e7ab-4eca-a707-4cea9758d4bf",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Dci6LFhsbaa5pJv0",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vision.googleapis.com/v1/images:annotate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"requests\": [\n    {\n      \"image\": {\n        \"content\": \"{{$input.first().json.data}}\"\n      },\n      \"features\": [\n        {\n          \"type\": \"DOCUMENT_TEXT_DETECTION\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        -144
+      ],
+      "id": "5caf6adb-a1ef-4333-b9d2-626f6ce2dcf5",
+      "name": "Image OCR",
+      "credentials": {
+        "googleApi": {
+          "id": "cCbFYlIhReQmXPvd",
+          "name": "Google Service Account account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst body = $input.all()[0].json.body;\nreturn { \n  name: body['name'],\n  date: body['date'],\n  file: body['file'][0]\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        -144
+      ],
+      "id": "33ee4701-2024-4e11-9b08-b4656c739fcc",
+      "name": "Extract filename"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        -144
+      ],
+      "id": "5e885ec7-53d8-4500-8744-954c36198acb",
+      "name": "Convert to base64"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyCuc1iWoRNTy3mi35cpXnWJZvMUl9mlaWQ",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": {{ JSON.stringify(\"Extract a list of product name, quantity, and unit in JSON format with the ocr text below: \" + $json.responses[0].textAnnotations[0].description) }}\n        }\n      ]\n    }\n  ]\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        -144
+      ],
+      "id": "03fc0c9f-47d0-475f-a974-0ac20127ddfa",
+      "name": "AI generate columns",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ymhtTnjoEgxQccaG",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// return $input.all();\n\n// Get the raw text response\nconst rawText = $input.first().json.candidates[0].content.parts[0].text;\n\n// Remove the ```json and ``` wrapping (if present)\nconst cleanedText = rawText.replace(/```json\\n?/, '').replace(/\\n?```/, '');\n\n// Parse the cleaned string into JSON\nconst parsed = JSON.parse(cleanedText);\n\n// Return as output\nreturn parsed.map(item => ({ json: item }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        -144
+      ],
+      "id": "16178360-6bb1-4ed9-86ee-54c2f3bfc672",
+      "name": "Format JSON"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 简单的相似度计算（基于编辑距离）\nfunction similarity(a, b) {\n  const distance = levenshtein(a, b);\n  return 1 - distance / Math.max(a.length, b.length);\n}\n\n// Levenshtein Distance 算法\nfunction levenshtein(a, b) {\n  const matrix = [];\n\n  for (let i = 0; i <= b.length; i++) {\n    matrix[i] = [i];\n  }\n  for (let j = 0; j <= a.length; j++) {\n    matrix[0][j] = j;\n  }\n\n  for (let i = 1; i <= b.length; i++) {\n    for (let j = 1; j <= a.length; j++) {\n      if (b.charAt(i - 1) === a.charAt(j - 1)) {\n        matrix[i][j] = matrix[i - 1][j - 1];\n      } else {\n        matrix[i][j] = Math.min(\n          matrix[i - 1][j - 1] + 1, // 替换\n          matrix[i][j - 1] + 1,     // 插入\n          matrix[i - 1][j] + 1      // 删除\n        );\n      }\n    }\n  }\n\n  return matrix[b.length][a.length];\n}\n\n// 读取输入数据\nconst rawProductList = $('read xlsx to json').all().map(item => item.json);\nconst ocrList = $('Format JSON').all().map(item => item.json);\n\n// 列名映射\nfunction mapProductFields(item) {\n  return {\n    product_id: item['品號'] || '', \n    product_name: item['品名'] || '',\n    unit: item['單位'] || '',\n  };\n}\n\nconst productList = rawProductList.map(mapProductFields);\n\nconst results = ocrList.map(ocr => {\n  let bestMatch = null;\n  let bestScore = 0;\n\n  for (const product of productList) {\n    const score = similarity(ocr.product_name, product.product_name);\n    if (score > bestScore) {\n      bestScore = score;\n      bestMatch = product;\n    }\n  }\n\n  return {\n    product_id: bestMatch?.product_id || '',\n    matched_name: bestMatch?.product_name || '',\n    original_input: ocr.product_name,\n    quantity: ocr.quantity,\n    match_score: bestScore.toFixed(2),\n  };\n});\n\n// 返回结果\nreturn [\n  {\n    json: {\n      customer_name: $('Download file').first().json.name,\n      order_date: $('Download file').first().json.date,\n      items: results,\n      status: \"completed\"\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        368,
+        48
+      ],
+      "id": "3093b8dc-5d32-4353-9cc0-78a10e15f8fc",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {
+          "headerRow": true
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        208
+      ],
+      "id": "6f53c867-d08e-48b2-b80c-eb1cd9898b0c",
+      "name": "read xlsx to json"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1nVSsgg82DuWTfaFapi3RpVHHVzZ6yAbZ/edit?gid=129486126#gid=129486126",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -368,
+        208
+      ],
+      "id": "673f4f95-bc80-4619-bc37-d79bc3398c49",
+      "name": "Download xlsx",
+      "executeOnce": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Dci6LFhsbaa5pJv0",
+          "name": "Google Drive account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract filename",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Download xlsx",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Convert to base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image OCR": {
+      "main": [
+        [
+          {
+            "node": "AI generate columns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract filename": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to base64": {
+      "main": [
+        [
+          {
+            "node": "Image OCR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI generate columns": {
+      "main": [
+        [
+          {
+            "node": "Format JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format JSON": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read xlsx to json": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download xlsx": {
+      "main": [
+        [
+          {
+            "node": "read xlsx to json",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0bdcea86-d6bd-4982-bb08-855db6913351",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9c222679986b46ad03598e92d26d4275be8a0b5f3552d4e44b1e9b1af2e5b22c"
+  },
+  "id": "9yERzhHQ0bBJD76K",
+  "tags": []
+}
