@@ -11,7 +11,7 @@
       "typeVersion": 2,
       "position": [
         -832,
-        16
+        -48
       ],
       "id": "e3773b8d-5622-47b5-af2a-86a43a1dc8a2",
       "name": "Webhook",
@@ -30,7 +30,7 @@
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        -464,
+        -384,
         -144
       ],
       "id": "bd14b796-e7ab-4eca-a707-4cea9758d4bf",
@@ -56,7 +56,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -160,
+        64,
         -144
       ],
       "id": "5caf6adb-a1ef-4333-b9d2-626f6ce2dcf5",
@@ -89,7 +89,7 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
       "position": [
-        -320,
+        -160,
         -144
       ],
       "id": "5e885ec7-53d8-4500-8744-954c36198acb",
@@ -109,7 +109,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        0,
+        288,
         -144
       ],
       "id": "03fc0c9f-47d0-475f-a974-0ac20127ddfa",
@@ -128,7 +128,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        160,
+        512,
         -144
       ],
       "id": "16178360-6bb1-4ed9-86ee-54c2f3bfc672",
@@ -141,8 +141,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        368,
-        48
+        720,
+        16
       ],
       "id": "3093b8dc-5d32-4353-9cc0-78a10e15f8fc",
       "name": "Code"
@@ -157,8 +157,8 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
       "position": [
-        -112,
-        208
+        32,
+        192
       ],
       "id": "6f53c867-d08e-48b2-b80c-eb1cd9898b0c",
       "name": "read xlsx to json"
@@ -177,7 +177,7 @@
       "typeVersion": 3,
       "position": [
         -368,
-        208
+        192
       ],
       "id": "673f4f95-bc80-4619-bc37-d79bc3398c49",
       "name": "Download xlsx",
@@ -188,6 +188,93 @@
           "name": "Google Drive account"
         }
       }
+    },
+    {
+      "parameters": {
+        "content": "当用户在google form上提交用户名、日期及image/pdf时触发该webhook",
+        "width": 208
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -880,
+        -112
+      ],
+      "typeVersion": 1,
+      "id": "66ec78ea-f8f2-46a5-a626-f0528267b279",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "下载用户提交的文件(image/pdf)，并转成base64格式，方便后续调用ocr接口",
+        "height": 240,
+        "width": 640
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -656,
+        -224
+      ],
+      "typeVersion": 1,
+      "id": "a06b9fed-005c-45c0-bfaf-977b08de561a",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "调用google vision api进行OCR识别",
+        "height": 240,
+        "width": 192
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        16,
+        -224
+      ],
+      "typeVersion": 1,
+      "id": "63c5ba65-9d1e-4e28-b00d-02815a501ac2",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "调用google ai接口从识别的文字中提取品號、品名、数量等信息，并转为json格式，方便后续模糊匹配",
+        "height": 240,
+        "width": 384
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        240,
+        -224
+      ],
+      "typeVersion": 1,
+      "id": "f5350ef1-8b30-4a55-a03b-d2d543354aaf",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "下载产品清单xlsx文件并转换成json格式，方便后续模糊匹配",
+        "height": 224,
+        "width": 576
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -400,
+        128
+      ],
+      "typeVersion": 1,
+      "id": "ebba72f0-e5a9-41b1-b40b-3d26c7ac6689",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "使用Levenshtein距离算法进行模糊匹配算法并按要求输出json格式"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        656,
+        -48
+      ],
+      "typeVersion": 1,
+      "id": "c5ad6c48-579e-4e9a-8696-b5528fa46b47",
+      "name": "Sticky Note5"
     }
   ],
   "pinData": {},
@@ -306,7 +393,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "0bdcea86-d6bd-4982-bb08-855db6913351",
+  "versionId": "7f0fd8aa-66ad-4801-93e2-ca7b13fe11ca",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "9c222679986b46ad03598e92d26d4275be8a0b5f3552d4e44b1e9b1af2e5b22c"
